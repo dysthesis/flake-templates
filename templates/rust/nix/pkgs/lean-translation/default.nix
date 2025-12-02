@@ -7,7 +7,8 @@
   src ? ../../..,
   lib,
   ...
-}: stdenvNoCC.mkDerivation {
+}:
+stdenvNoCC.mkDerivation {
   pname = "lean-translation";
   version = "0.1.0";
 

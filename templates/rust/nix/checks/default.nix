@@ -1,42 +1,42 @@
 {
-  perSystem = {
-    lib,
-    self',
-    advisory-db,
-    craneLib,
-    commonArgs,
-    cargoArtifacts,
-    src,
-    ...
-  }: {
-    checks = let
-      inherit (lib) fold;
-      defaultCheckArgs = {
-        inherit
-          craneLib
-          commonArgs
-          cargoArtifacts
-          src
-          ;
-        inherit
-          advisory-db
-          ;
-      };
+  perSystem =
+    {
+      lib,
+      self',
+      advisory-db,
+      craneLib,
+      commonArgs,
+      cargoArtifacts,
+      src,
+      ...
+    }:
+    {
+      checks =
+        let
+          inherit (lib) fold;
+          defaultCheckArgs = {
+            inherit
+              craneLib
+              commonArgs
+              cargoArtifacts
+              src
+              ;
+            inherit
+              advisory-db
+              ;
+          };
 
-      mkCheck = name: {"package-${name}" = import (./. + "/${name}.nix") defaultCheckArgs;};
+          mkCheck = name: { "package-${name}" = import (./. + "/${name}.nix") defaultCheckArgs; };
 
-      checkNames = [
-        "clippy"
-        "doc"
-        "fmt"
-        "audit"
-        # "deny" # TODO: enable this once licensing is decided
-        "nextest"
-      ];
-    in
-      fold
-      (curr: acc: acc // mkCheck curr)
-      {package = self'.packages.default;}
-      checkNames;
-  };
+          checkNames = [
+            "clippy"
+            "doc"
+            "fmt"
+            "audit"
+            # "deny" # TODO: enable this once licensing is decided
+            "nextest"
+          ];
+        in
+        fold (curr: acc: acc // mkCheck curr) { package = self'.packages.default; } checkNames;
+    };
 }
