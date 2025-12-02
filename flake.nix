@@ -3,7 +3,11 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {flake-parts, ...}:
@@ -17,6 +21,8 @@
 
       imports = [
         ./nix/shell
+        ./nix/formatting
+        inputs.treefmt-nix.flakeModule
       ];
 
       systems = [
