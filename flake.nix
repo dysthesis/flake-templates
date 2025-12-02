@@ -8,7 +8,7 @@
 
   outputs = inputs @ {flake-parts, ...}:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      flake.outputs.templates = {
+      flake.templates = {
         rust = {
           path = ./templates/rust;
           description = "A template for a generic Rust project";
