@@ -69,6 +69,7 @@
             charonToolchain
             advisory-db
             aeneasLib
+            aeneasSrc
             ;
 
           # NOTE: This is where overlays, and other such modifications to the

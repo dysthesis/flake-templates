@@ -2,6 +2,7 @@
   perSystem =
     {
       lib,
+      pkgs,
       self',
       advisory-db,
       craneLib,
@@ -20,6 +21,7 @@
               commonArgs
               cargoArtifacts
               src
+              pkgs
               ;
             inherit
               advisory-db

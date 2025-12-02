@@ -5,6 +5,7 @@
   charonToolchain,
   aeneas,
   charon,
+  aeneasLib,
   src ? ../../..,
   lib,
   ...
@@ -13,12 +14,6 @@ let
   cargoVendorDir = craneLib.vendorCargoDeps {
     inherit src;
   };
-
-  aeneasLeanPaths = [
-    "${aeneas}/backends/lean"
-    "${aeneas}/lib/lean"
-    "${aeneas}/share/lean"
-  ];
 in
 stdenvNoCC.mkDerivation {
   pname = "lean-translation";
@@ -90,23 +85,22 @@ EOF
     lean_lib="$out/lib/lean"
     mkdir -p "$lean_lib"
 
-    # Copy generated Lean files into a library-like layout
-    find . -name '*.lean' -print0 \
+    # Copy generated Lean files into a library-like layout, excluding proofs/ directory
+    find . -name '*.lean' ! -path '*/proofs/*' -print0 \
       | xargs -0 -I '{}' install -Dm644 '{}' "$lean_lib/{}"
 
-    # Expose the Aeneas Lean standard library alongside the generated files.
-    for p in ${builtins.concatStringsSep " " aeneasLeanPaths}; do
-      if [ -d "$p/Aeneas" ]; then
-        ln -s "$p/Aeneas" "$lean_lib/Aeneas"
-        break
-      fi
-    done
+    # Symlink the Aeneas Lean standard library alongside the generated files
+    if [ -d "${aeneasLib}/lib/lean/Aeneas" ]; then
+      ln -s "${aeneasLib}/lib/lean/Aeneas" "$lean_lib/Aeneas"
+    else
+      echo "Warning: Aeneas library not found at ${aeneasLib}/lib/lean/Aeneas" >&2
+    fi
 
-    # Record a LEAN_PATH hint for downstream consumers.
+    # Record a LEAN_PATH hint for downstream consumers
     mkdir -p "$out/nix-support"
     cat > "$out/nix-support/lean-path" <<EOF
 $lean_lib
-${builtins.concatStringsSep "\n" aeneasLeanPaths}
+${aeneasLib}/lib/lean
 EOF
   '';
 
