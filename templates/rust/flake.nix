@@ -36,6 +36,9 @@
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       perSystem = {
+        # NOTE: This packages is only used to construct the common argument for
+        # crane; the actual `pkgs` used in the other Nix modules are defined 
+        # below
         pkgs,
         system,
         ...
@@ -61,6 +64,9 @@
       in {
         _module.args = {
           inherit craneLib cargoArtifacts commonArgs;
+
+          # NOTE: This is where overlays, and other such modifications to the 
+          # general shared packages list.
           pkgs = import inputs.nixpkgs {
             inherit system;
             overlays = [
