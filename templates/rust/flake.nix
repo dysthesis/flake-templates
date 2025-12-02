@@ -7,6 +7,7 @@
     flake-parts,
     crane,
     advisory-db,
+    lean4-nix,
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -35,30 +36,15 @@
           ];
         };
 
-        aeneasSrc = pkgs.fetchFromGitHub {
-          owner = "AeneasVerif";
-          repo = "Aeneas";
-          rev = "ec7b11e31650d8ac43a608c6b0f094fd91d9163c";
-          hash = "sha256-p25AVnGqjk9ppVGfT+DKZUPBdLUXghcRSetgglYvQdg=";
-        };
-
-        aeneasLib = pkgs.stdenvNoCC.mkDerivation {
-          name = "aeneas-lib";
-          version = "0.1.0";
-          src = aeneasSrc;
-
-          phases = ["installPhase"];
-
-          installPhase = ''
-            mkdir -p $out/lib
-            cp -r $src/backends/lean $out/lib/lean
-          '';
-        };
-
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
         charonToolchain =
           inputs.aeneas.inputs.charon.packages.${system}.rustToolchain;
+
+        # Used to build Lean packages
+        lake2nix = pkgs.callPackage ./nix/lib/lean.nix {
+          extraBuildInputs = with pkgs; [nodejs];
+        };
       in {
         _module.args = {
           inherit
@@ -68,8 +54,7 @@
             src
             charonToolchain
             advisory-db
-            aeneasLib
-            aeneasSrc
+            lake2nix
             ;
 
           # NOTE: This is where overlays, and other such modifications to the

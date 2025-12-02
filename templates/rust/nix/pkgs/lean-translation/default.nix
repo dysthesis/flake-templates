@@ -1,108 +1,111 @@
 {
   stdenvNoCC,
+  writers,
   craneLib,
+  lake2nix,
   # Charon's Rust toolchain
   charonToolchain,
   aeneas,
   charon,
-  aeneasLib,
+  aeneas-lean-backend,
   src ? ../../..,
   lib,
   ...
-}:
-let
+}: let
   cargoVendorDir = craneLib.vendorCargoDeps {
     inherit src;
   };
-in
-stdenvNoCC.mkDerivation {
-  pname = "lean-translation";
-  version = "0.1.0";
-
-  inherit src;
-
-  nativeBuildInputs = [ charonToolchain ];
-  buildInputs = [
-    charon
-    aeneas
+  dependencies = [
+    {
+      name = "aeneas";
+      path = aeneas-lean-backend;
+    }
   ];
 
-  dontConfigure = true;
+  lakefile = writers.writeTOML "lakefile.toml" {
+    require = dependencies;
+  };
 
-  buildPhase = ''
-    set -eux
+  translated = stdenvNoCC.mkDerivation {
+    pname = "lean-translation";
+    version = "0.1.0";
 
-    cp -r "$src" crate
-    chmod -R u+w crate
-    cd crate
+    inherit src;
 
-    crate_manifest=$(find . -name Cargo.toml -print | head -n1 || true)
+    nativeBuildInputs = [charonToolchain];
+    buildInputs = [
+      charon
+      aeneas
+    ];
 
-    if [ -z "$crate_manifest" ]; then
-      echo "No Cargo.toml found under $PWD – this source is not a Rust crate (or crate is in an unexpected place)." >&2
-      exit 1
-    fi
+    dontConfigure = true;
 
-    crate_dir=$(dirname "$crate_manifest")
-    cd "$crate_dir"
+    buildPhase = ''
+          set -eux
 
-    echo "Using crate root: $PWD (found $crate_manifest)"
+          cp -r "$src" crate
+          chmod -R u+w crate
+          cd crate
 
-    mkdir -p .cargo
-    cat ${cargoVendorDir}/config.toml > .cargo/config.toml
-    cat >> .cargo/config.toml <<'EOF'
-[net]
-offline = true
-EOF
+          crate_manifest=$(find . -name Cargo.toml -print | head -n1 || true)
 
-    export PATH=${charonToolchain}/bin:$PATH
-    export RUSTUP_HOME=$PWD/.rustup
-    export CARGO_HOME=$PWD/.cargo
+          if [ -z "$crate_manifest" ]; then
+            echo "No Cargo.toml found under $PWD – this source is not a Rust crate (or crate is in an unexpected place)." >&2
+            exit 1
+          fi
 
-    ${lib.getExe charon} cargo --preset=aeneas
+          crate_dir=$(dirname "$crate_manifest")
+          cd "$crate_dir"
 
-    shopt -s nullglob
-    llbc_files=(*.llbc)
-    if [ "''${#llbc_files[@]}" -eq 0 ]; then
-      echo "No .llbc files produced by charon; expected at least one." >&2
-      exit 1
-    fi
+          echo "Using crate root: $PWD (found $crate_manifest)"
 
-    # Prefer translating library artefacts; fall back to all if none match.
-    lib_llbc_files=(lib*.llbc)
-    if [ "''${#lib_llbc_files[@]}" -gt 0 ]; then
-      llbc_files=("''${lib_llbc_files[@]}")
-    fi
+          mkdir -p .cargo
+          cat ${cargoVendorDir}/config.toml > .cargo/config.toml
+          cat >> .cargo/config.toml <<'EOF'
+      [net]
+      offline = true
+      EOF
 
-    for llbc_file in "''${llbc_files[@]}"; do
-      echo "Translating $llbc_file to Lean"
-      ${lib.getExe aeneas} -backend lean -split-files "$llbc_file"
-    done
-  '';
+          export PATH=${charonToolchain}/bin:$PATH
+          export RUSTUP_HOME=$PWD/.rustup
+          export CARGO_HOME=$PWD/.cargo
 
-  installPhase = ''
-    set -eux
-    lean_lib="$out/lib/lean"
-    mkdir -p "$lean_lib"
+          ${lib.getExe charon} cargo --preset=aeneas
 
-    # Copy generated Lean files into a library-like layout, excluding proofs/ directory
-    find . -name '*.lean' ! -path '*/proofs/*' -print0 \
-      | xargs -0 -I '{}' install -Dm644 '{}' "$lean_lib/{}"
+          shopt -s nullglob
+          llbc_files=(*.llbc)
+          if [ "''${#llbc_files[@]}" -eq 0 ]; then
+            echo "No .llbc files produced by charon; expected at least one." >&2
+            exit 1
+          fi
 
-    # Symlink the Aeneas Lean standard library alongside the generated files
-    if [ -d "${aeneasLib}/lib/lean/Aeneas" ]; then
-      ln -s "${aeneasLib}/lib/lean/Aeneas" "$lean_lib/Aeneas"
-    else
-      echo "Warning: Aeneas library not found at ${aeneasLib}/lib/lean/Aeneas" >&2
-    fi
+          lib_llbc_files=(lib*.llbc)
+          if [ "''${#lib_llbc_files[@]}" -gt 0 ]; then
+            llbc_files=("''${lib_llbc_files[@]}")
+          fi
 
-    # Record a LEAN_PATH hint for downstream consumers
-    mkdir -p "$out/nix-support"
-    cat > "$out/nix-support/lean-path" <<EOF
-$lean_lib
-${aeneasLib}/lib/lean
-EOF
-  '';
+          for llbc_file in "''${llbc_files[@]}"; do
+            echo "Translating $llbc_file to Lean"
+            ${lib.getExe aeneas} -backend lean -split-files "$llbc_file"
+          done
+    '';
 
-  doCheck = false;
-}
+    installPhase = ''
+      set -eux
+      mkdir -pv $out
+
+      find . -name '*.lean' ! -path '*/proofs/*' -print0 \
+        | xargs -0 -I '{}' install -Dm644 '{}' "$out/{}"
+
+      cp ${lakefile} $out/lakefile.toml
+    '';
+
+    doCheck = false;
+  };
+in
+  translated
+# lake2nix.mkPackage {
+#   src = translated;
+#   roots = ["Libtemplate"];
+# }
+
