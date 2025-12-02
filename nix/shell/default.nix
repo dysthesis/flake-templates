@@ -8,6 +8,12 @@
         deadnix
         nixfmt
         alejandra
+
+        # Rust
+        cargo
+        rustc
+        rust-analyzer
+        bacon
       ];
     };
   };
