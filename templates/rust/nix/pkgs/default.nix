@@ -4,12 +4,16 @@
     pkgs,
     commonArgs,
     cargoArtifacts,
+    lib,
+    inputs,
+    inputs',
+    charonToolchain,
     ...
   }: let
-    inherit (pkgs) callPackage;
+    inherit (pkgs) callPackage system;
   in {
     packages = rec {
-      template = callPackage ./template {
+      package = callPackage ./package {
         inherit
           craneLib
           pkgs
@@ -18,7 +22,12 @@
           ;
       };
 
-      default = template;
+      lean-translation = callPackage ./lean-translation {
+        inherit lib charonToolchain;
+        inherit (inputs'.aeneas.packages) aeneas charon;
+      };
+
+      default = package;
     };
   };
 }
