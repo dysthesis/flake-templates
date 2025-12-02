@@ -3,6 +3,7 @@
     {
       craneLib,
       pkgs,
+      src,
       commonArgs,
       cargoArtifacts,
       lib,
@@ -26,8 +27,9 @@
         };
 
         lean-translation = callPackage ./lean-translation {
-          inherit lib charonToolchain;
+          inherit lib charonToolchain craneLib;
           inherit (inputs'.aeneas.packages) aeneas charon;
+          inherit src;
         };
 
         default = package;

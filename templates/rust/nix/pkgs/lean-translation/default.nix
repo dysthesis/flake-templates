@@ -1,5 +1,6 @@
 {
   stdenvNoCC,
+  craneLib,
   # Charon's Rust toolchain
   charonToolchain,
   aeneas,
@@ -8,6 +9,11 @@
   lib,
   ...
 }:
+let
+  cargoVendorDir = craneLib.vendorCargoDeps {
+    inherit src;
+  };
+in
 stdenvNoCC.mkDerivation {
   pname = "lean-translation";
   version = "0.1.0";
@@ -41,20 +47,36 @@ stdenvNoCC.mkDerivation {
 
     echo "Using crate root: $PWD (found $crate_manifest)"
 
+    mkdir -p .cargo
+    cat ${cargoVendorDir}/config.toml > .cargo/config.toml
+    cat >> .cargo/config.toml <<'EOF'
+[net]
+offline = true
+EOF
+
     export PATH=${charonToolchain}/bin:$PATH
     export RUSTUP_HOME=$PWD/.rustup
     export CARGO_HOME=$PWD/.cargo
 
     ${lib.getExe charon} cargo --preset=aeneas
 
-    llbc_files=$(ls *.llbc)
-    if [ "$(printf '%s\n' $llbc_files | wc -l)" -ne 1 ]; then
-      echo "Expected exactly one .llbc file, found: $llbc_files" >&2
+    shopt -s nullglob
+    llbc_files=(*.llbc)
+    if [ "''${#llbc_files[@]}" -eq 0 ]; then
+      echo "No .llbc files produced by charon; expected at least one." >&2
       exit 1
     fi
-    llbc_file="$llbc_files"
 
-    ${lib.getExe aeneas} -backend lean -split-files "$llbc_file"
+    # Prefer translating library artefacts; fall back to all if none match.
+    lib_llbc_files=(lib*.llbc)
+    if [ "''${#lib_llbc_files[@]}" -gt 0 ]; then
+      llbc_files=("''${lib_llbc_files[@]}")
+    fi
+
+    for llbc_file in "''${llbc_files[@]}"; do
+      echo "Translating $llbc_file to Lean"
+      ${lib.getExe aeneas} -backend lean -split-files "$llbc_file"
+    done
   '';
 
   installPhase = ''
