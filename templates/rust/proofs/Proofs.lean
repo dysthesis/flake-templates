@@ -1,5 +1,5 @@
 import Aeneas
-import Funs
+import Libtemplate.Funs
 
 open Aeneas.Std Result Error
 open libtemplate
