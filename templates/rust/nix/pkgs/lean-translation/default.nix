@@ -13,6 +13,12 @@ let
   cargoVendorDir = craneLib.vendorCargoDeps {
     inherit src;
   };
+
+  aeneasLeanPaths = [
+    "${aeneas}/backends/lean"
+    "${aeneas}/lib/lean"
+    "${aeneas}/share/lean"
+  ];
 in
 stdenvNoCC.mkDerivation {
   pname = "lean-translation";
@@ -81,10 +87,27 @@ EOF
 
   installPhase = ''
     set -eux
-    mkdir -p "$out"
+    lean_lib="$out/lib/lean"
+    mkdir -p "$lean_lib"
 
+    # Copy generated Lean files into a library-like layout
     find . -name '*.lean' -print0 \
-      | xargs -0 -I '{}' sh -c 'mkdir -p "$out/$(dirname "{}")"; cp "{}" "$out/{}"'
+      | xargs -0 -I '{}' install -Dm644 '{}' "$lean_lib/{}"
+
+    # Expose the Aeneas Lean standard library alongside the generated files.
+    for p in ${builtins.concatStringsSep " " aeneasLeanPaths}; do
+      if [ -d "$p/Aeneas" ]; then
+        ln -s "$p/Aeneas" "$lean_lib/Aeneas"
+        break
+      fi
+    done
+
+    # Record a LEAN_PATH hint for downstream consumers.
+    mkdir -p "$out/nix-support"
+    cat > "$out/nix-support/lean-path" <<EOF
+$lean_lib
+${builtins.concatStringsSep "\n" aeneasLeanPaths}
+EOF
   '';
 
   doCheck = false;

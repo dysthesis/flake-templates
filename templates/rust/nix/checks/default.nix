@@ -24,6 +24,7 @@
             inherit
               advisory-db
               ;
+            inherit self';
           };
 
           mkCheck = name: { "package-${name}" = import (./. + "/${name}.nix") defaultCheckArgs; };
@@ -35,6 +36,7 @@
             "audit"
             # "deny" # TODO: enable this once licensing is decided
             "nextest"
+            "proofs"
           ];
         in
         fold (curr: acc: acc // mkCheck curr) { package = self'.packages.default; } checkNames;
