@@ -43,7 +43,12 @@
 
         # Used to build Lean packages
         lake2nix = pkgs.callPackage ./nix/lib/lean.nix {
-          extraBuildInputs = with pkgs; [nodejs];
+          # NOTE: Define any additional dependencies needed to build Lean
+          # dependencies
+          extraBuildInputs = with pkgs; [
+            # For proofwidgets
+            nodejs
+          ];
         };
       in {
         _module.args = {

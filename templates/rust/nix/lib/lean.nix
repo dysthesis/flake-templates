@@ -18,7 +18,6 @@
     lib.warnIf (manifest.version != "1.1.0") ("Unknown version: " + builtins.toString manifest.version) manifest;
   # A wrapper around `mkDerivation` which sets up the lake manifest
   mkLakeDerivation = args @ {
-    name,
     src,
     deps ? {},
     ...
@@ -42,23 +41,85 @@
   in
     stdenv.mkDerivation (
       {
+        inherit src;
+
+        unpackPhase = ''
+          runHook preUnpack
+
+          # Copy the repo out of /nix/store into the writable build dir
+          echo "Copying source from ${src}"
+          cp -R "${src}"/. .
+          chmod -R u+w .
+
+          # Verify files were copied
+          echo "Contents of build directory:"
+          ls -la
+
+          runHook postUnpack
+        '';
+
         buildInputs = extraBuildInputs ++ [lean.lean-all];
 
         configurePhase = ''
-          rm lake-manifest.json
-          ln -s ${replaceManifest} lake-manifest.json
+          runHook preConfig
+
+          # NOTE: We do this rather than use the surrogate manifest in order to
+          # allow the build process write access.
+          mkdir -p .lake/build/lib
+
+          ${lib.concatStringsSep "\n" (lib.mapAttrsToList (depName: depPath: ''
+              echo "Staging dependency: ${depName} from ${depPath}"
+              if [ -d "${depPath}/lib/lean" ]; then
+                cp -r "${depPath}/lib/lean" .lake/build/lib/
+              fi
+            '')
+            deps)}
+
+          # Verify lake configuration
+          echo "Lake configuration ready"
+          ls -la lakefile.* || echo "Warning: No lakefile found"
+          echo "Staged dependencies in .lake/build/lib:"
+          ls -la .lake/build/lib/ || true
+          ls -la .lake/build/lib/* || true
+
+          runHook postConfig
         '';
 
         buildPhase = ''
+          runHook preBuild
+
           lake build
+
+          runHook postBuild
         '';
+
         installPhase = ''
-          mkdir -p $out/
-          mv * $out/
-          mv .lake $out/
+          runHook preInstall
+
+          mkdir -p "$out"
+
+          # Install only the build artifacts as a pre-built library
+          # This prevents Lake from trying to rebuild dependencies in the Nix store
+          if [ -d .lake/build/lib ]; then
+            mkdir -p "$out/lib"
+            cp -r .lake/build/lib/lean "$out/lib/" || true
+          fi
+
+          # Also copy bin if it exists (for executables)
+          if [ -d .lake/build/bin ]; then
+            cp -r .lake/build/bin "$out/" || true
+          fi
+
+          # Install IR and object files if they exist
+          if [ -d .lake/build/ir ]; then
+            mkdir -p "$out/ir"
+            cp -r .lake/build/ir/* "$out/ir/" || true
+          fi
+
+          runHook postInstall
         '';
       }
-      // (builtins.removeAttrs args ["deps"])
+      // (builtins.removeAttrs args ["deps" "src"])
     );
   # Builds a Lean package by reading the manifest file.
   mkPackage = args @ {
