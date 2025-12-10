@@ -205,20 +205,20 @@
     "lean4-nix": {
       "inputs": {
         "flake-parts": "flake-parts_2",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_3",
+        "npmlock2nix": "npmlock2nix"
       },
       "locked": {
-        "lastModified": 1764527451,
-        "narHash": "sha256-W1N8ZPYZMnekkCTjYmSOomRZaW4UpGwt5Pl5kDMNB+o=",
-        "owner": "lenianiva",
-        "repo": "lean4-nix",
-        "rev": "5670f3815d3abdfb13b43ca4ef81c576ab9b655b",
-        "type": "github"
+        "lastModified": 1765353099,
+        "narHash": "sha256-9S/DaVzRuFH4M6VOvxKDAsq/vtQBIajeKPqi0idH8xg=",
+        "rev": "0761e7f5564830950be713f56ae0fa68dcae387e",
+        "revCount": 237,
+        "type": "git",
+        "url": "file:///home/demiurge/Documents/Projects/lean4-nix"
       },
       "original": {
-        "owner": "lenianiva",
-        "repo": "lean4-nix",
-        "type": "github"
+        "type": "git",
+        "url": "file:///home/demiurge/Documents/Projects/lean4-nix"
       }
     },
     "nixpkgs": {
@@ -322,6 +322,22 @@
         "owner": "nixos",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "npmlock2nix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1758100811,
+        "narHash": "sha256-qJc3ffjHVXUdZqytKcDK9XZ2b3BQ1RdYfZFuYgxbrn4=",
+        "owner": "nix-community",
+        "repo": "npmlock2nix",
+        "rev": "4d9060afbaa5f57ee0b8ef11c7044ed287a7d302",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "npmlock2nix",
         "type": "github"
       }
     },
