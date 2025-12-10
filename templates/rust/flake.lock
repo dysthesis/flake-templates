@@ -209,9 +209,9 @@
         "npmlock2nix": "npmlock2nix"
       },
       "locked": {
-        "lastModified": 1765353099,
-        "narHash": "sha256-9S/DaVzRuFH4M6VOvxKDAsq/vtQBIajeKPqi0idH8xg=",
-        "rev": "0761e7f5564830950be713f56ae0fa68dcae387e",
+        "lastModified": 1765355963,
+        "narHash": "sha256-mwkSOpS4BF2phRUiQOaMKZXjwDS/gfr5I5jG3zYeJJ0=",
+        "rev": "d0cee05eccbba213d929c1e35f613bad87eb9383",
         "revCount": 237,
         "type": "git",
         "url": "file:///home/demiurge/Documents/Projects/lean4-nix"
