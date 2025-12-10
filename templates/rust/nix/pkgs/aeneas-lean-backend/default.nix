@@ -1,8 +1,8 @@
 {
   lake2nix,
   fetchFromGitHub,
-  stdenvNoCC,
-  nodejs,
+  lib,
+  proofwidgets,
   ...
 }: let
   rawSrc = fetchFromGitHub {
@@ -12,19 +12,10 @@
     hash = "sha256-p25AVnGqjk9ppVGfT+DKZUPBdLUXghcRSetgglYvQdg=";
   };
 
-  src = stdenvNoCC.mkDerivation {
-    name = "aeneas-lean-backend-cleaned";
-    version = "0.1.0";
-    src = rawSrc;
-
-    phases = ["installPhase"];
-
-    installPhase = ''
-      cp -r $src/backends/lean $out
-    '';
-  };
+  src = "${rawSrc}/backends/lean";
 in
   lake2nix.mkPackage {
     inherit src;
     roots = ["Aeneas"];
+    depOverride = {proofwidgets = {src = proofwidgets;};};
   }

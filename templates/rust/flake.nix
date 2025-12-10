@@ -42,14 +42,7 @@
           inputs.aeneas.inputs.charon.packages.${system}.rustToolchain;
 
         # Used to build Lean packages
-        lake2nix = pkgs.callPackage ./nix/lib/lean.nix {
-          # NOTE: Define any additional dependencies needed to build Lean
-          # dependencies
-          extraBuildInputs = with pkgs; [
-            # For proofwidgets
-            nodejs
-          ];
-        };
+        lake2nix = pkgs.callPackage lean4-nix.lake {};
       in {
         _module.args = {
           inherit
@@ -104,7 +97,7 @@
 
     # Theorem proving
     aeneas.url = "github:AeneasVerif/aeneas";
-    lean4-nix.url = "github:lenianiva/lean4-nix";
+    lean4-nix.url = "git+file:///home/demiurge/Documents/Projects/lean4-nix";
 
     # Formatting
     treefmt-nix.url = "github:numtide/treefmt-nix";

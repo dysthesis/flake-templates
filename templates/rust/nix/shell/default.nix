@@ -3,11 +3,14 @@
     pkgs,
     craneLib,
     inputs',
-    lean-translation,
-    aeneasLib,
+    self',
     ...
   }: let
     valeConfigured = pkgs.callPackage ./vale {};
+
+    # Packages from this flake
+    leanTranslation = self'.packages.lean-translation;
+    aeneasLib = self'.packages.aeneas-lean-backend;
   in {
     devShells.default = craneLib.devShell {
       packages = with pkgs; [
@@ -15,7 +18,6 @@
         nixd
         statix
         deadnix
-        nixfmt
         alejandra
 
         # Rust
@@ -33,8 +35,9 @@
         inputs'.aeneas.packages.aeneas
         lean4
       ];
-      LEAN_SRC_PATH = "${lean-translation}/lib/lean:${aeneasLib}/lib/lean";
-      LEAN_PATH = "${lean-translation}/lib/lean:${aeneasLib}/lib/lean";
+
+      LEAN_SRC_PATH = "${leanTranslation}/lib/lean:${aeneasLib}/lib/lean";
+      LEAN_PATH = "${leanTranslation}/lib/lean:${aeneasLib}/lib/lean";
     };
   };
 }
