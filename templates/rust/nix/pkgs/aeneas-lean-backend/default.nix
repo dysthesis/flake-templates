@@ -1,7 +1,6 @@
 {
   lake2nix,
   fetchFromGitHub,
-  lib,
   proofwidgets,
   ...
 }: let

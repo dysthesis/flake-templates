@@ -97,7 +97,7 @@
 
     # Theorem proving
     aeneas.url = "github:AeneasVerif/aeneas";
-    lean4-nix.url = "git+file:///home/demiurge/Documents/Projects/lean4-nix";
+    lean4-nix.url = "github:dysthesis/lean4-nix/dev";
 
     # Formatting
     treefmt-nix.url = "github:numtide/treefmt-nix";
