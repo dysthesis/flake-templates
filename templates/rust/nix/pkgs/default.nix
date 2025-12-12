@@ -27,6 +27,8 @@
 
         proofwidgets = callPackage ./proofwidgets { inherit lake2nix; };
 
+        mathlib = callPackage ./mathlib { inherit pkgs; };
+
         aeneas-lean-backend = callPackage ./aeneas-lean-backend {
           inherit lake2nix proofwidgets;
         };
