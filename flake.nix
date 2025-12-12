@@ -18,6 +18,10 @@
           path = ./templates/rust;
           description = "A template for a generic Rust project";
         };
+        lean = {
+          path = ./templates/lean;
+          description = "Lean-focused template that translates and verifies Rust code";
+        };
       };
 
       imports = [
