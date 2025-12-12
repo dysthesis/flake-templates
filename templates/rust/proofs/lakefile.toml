@@ -4,9 +4,3 @@ defaultTargets = ["Proofs"]
 
 [[lean_lib]]
 name = "Proofs"
-
-[[lean_lib]]
-name = "Aeneas"
-
-[[lean_lib]]
-name = "Libtemplate"

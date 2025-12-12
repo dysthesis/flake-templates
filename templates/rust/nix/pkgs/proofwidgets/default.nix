@@ -6,7 +6,8 @@
   runCommand,
   lake2nix,
   ...
-}: let
+}:
+let
   # Fetch ProofWidgets source (version from Aeneas manifest)
   proofWidgetsSrc = fetchFromGitHub {
     owner = "leanprover-community";
@@ -28,7 +29,10 @@
 
     src = "${proofWidgetsSrc}/widget";
 
-    nativeBuildInputs = [nodejs pkgs.npmHooks.npmConfigHook];
+    nativeBuildInputs = [
+      nodejs
+      pkgs.npmHooks.npmConfigHook
+    ];
     inherit npmDeps;
 
     buildPhase = ''
@@ -96,23 +100,23 @@
     dontFixup = true;
   };
 in
-  # Build ProofWidgets using lake2nix with pre-built widgets
-  lake2nix.mkLakeDerivation {
-    name = "proofwidgets";
-    src = patchedSrc;
+# Build ProofWidgets using lake2nix with pre-built widgets
+lake2nix.mkLakeDerivation {
+  name = "proofwidgets";
+  src = patchedSrc;
 
-    # Install pre-built JavaScript files before Lake build
-    # Files go to both share/js (for dependent packages) and .lake/build/js (for this build)
-    preBuild = ''
-      echo "Installing pre-built ProofWidgets JavaScript files..."
-      mkdir -p share/js
-      mkdir -p .lake/build/js
-      cp -r ${widgetBuilt}/dist/* share/js/
-      cp -r ${widgetBuilt}/dist/* .lake/build/js/
-      chmod -R +w share/js .lake/build/js
-    '';
+  # Install pre-built JavaScript files before Lake build
+  # Files go to both share/js (for dependent packages) and .lake/build/js (for this build)
+  preBuild = ''
+    echo "Installing pre-built ProofWidgets JavaScript files..."
+    mkdir -p share/js
+    mkdir -p .lake/build/js
+    cp -r ${widgetBuilt}/dist/* share/js/
+    cp -r ${widgetBuilt}/dist/* .lake/build/js/
+    chmod -R +w share/js .lake/build/js
+  '';
 
-    # The JS files in share/js are accessible to dependent packages because
-    # share/ is not covered by tmpfs mounts in lake2nix's bubblewrap sandbox
-    nativeBuildInputs = [nodejs];
-  }
+  # The JS files in share/js are accessible to dependent packages because
+  # share/ is not covered by tmpfs mounts in lake2nix's bubblewrap sandbox
+  nativeBuildInputs = [ nodejs ];
+}

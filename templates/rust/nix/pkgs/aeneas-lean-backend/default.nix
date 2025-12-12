@@ -3,7 +3,8 @@
   fetchFromGitHub,
   proofwidgets,
   ...
-}: let
+}:
+let
   rawSrc = fetchFromGitHub {
     owner = "AeneasVerif";
     repo = "Aeneas";
@@ -13,8 +14,12 @@
 
   src = "${rawSrc}/backends/lean";
 in
-  lake2nix.mkPackage {
-    inherit src;
-    roots = ["Aeneas"];
-    depOverride = {proofwidgets = {src = proofwidgets;};};
-  }
+lake2nix.mkPackage {
+  inherit src;
+  roots = [ "Aeneas" ];
+  depOverride = {
+    proofwidgets = {
+      src = proofwidgets;
+    };
+  };
+}

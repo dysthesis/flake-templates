@@ -31,16 +31,11 @@ stdenvNoCC.mkDerivation {
     # Create .lake/build/lib/lean directory structure
     mkdir -p .lake/build/lib/lean
 
-    # Copy the pre-built Aeneas library (with compiled .olean files) into .lake/build/lib/lean
+    # Copy the pre-built Aeneas library (compiled .olean files and metadata)
     if [ -d "${aeneasLeanBuilt}/lib/lean" ]; then
       echo "Copying pre-built Aeneas library with compiled modules..."
 
-      # Copy Aeneas directories and top-level files to where Lean expects them
-      for item in Aeneas AeneasMeta Aeneas.lean AeneasMeta.lean AeneasExtract.lean; do
-        if [ -e "${aeneasLeanBuilt}/lib/lean/$item" ]; then
-          cp -r "${aeneasLeanBuilt}/lib/lean/$item" .lake/build/lib/lean/
-        fi
-      done
+      cp -r "${aeneasLeanBuilt}/lib/lean"/. .lake/build/lib/lean/
 
       # Copy Lake packages if they exist
       if [ -d "${aeneasLeanBuilt}/lib/lean/.lake-packages" ]; then
@@ -52,28 +47,48 @@ stdenvNoCC.mkDerivation {
       exit 1
     fi
 
-    # Copy generated Lean definitions from lean-translation into proper module hierarchy
+    # Stage generated Lean definitions from the translation output (expected under lib/lean)
     if [ -d "${lean-translation}/lib/lean" ]; then
-      # Create Libtemplate module directory for the generated files
-      mkdir -p .lake/build/lib/lean/Libtemplate
-
-      # Copy all .lean files (excluding symlinks like the Aeneas directory) into Libtemplate/
-      find "${lean-translation}/lib/lean" -maxdepth 1 -type f -name '*.lean' -exec cp {} .lake/build/lib/lean/Libtemplate/ \;
-
-      # Create a top-level Libtemplate.lean that imports all generated modules
-      cat > .lake/build/lib/lean/Libtemplate.lean <<'EOF'
--- Re-export all modules from the Libtemplate namespace
-import Libtemplate.Types
-import Libtemplate.Funs
-EOF
+      mkdir -p .lake/build/lib/lean
+      cp -r "${lean-translation}/lib/lean"/. .lake/build/lib/lean/
     else
       echo "Error: lean-translation output not found at ${lean-translation}/lib/lean" >&2
       exit 1
     fi
 
+    # Bring in the Lean dependencies Aeneas was built against (mathlib, aesop, batteries, proofwidgets, ...)
+    shopt -s nullglob
+    staged_mathlib=false
+    for dep in /nix/store/*-{mathlib,aesop,batteries,Cli,importGraph,LeanSearchClient,plausible,Qq,proofwidgets}; do
+      if [ -d "$dep/lib/lean" ]; then
+        cp -r "$dep/lib/lean"/. .lake/build/lib/lean/
+      fi
+
+      if [ -d "$dep/.lake/build/lib/lean" ]; then
+        cp -r "$dep/.lake/build/lib/lean"/. .lake/build/lib/lean/
+      fi
+
+      if [ -f "$dep/.lake/build/lib/lean/Mathlib.olean" ] || [ -f "$dep/lib/lean/Mathlib.olean" ]; then
+        staged_mathlib=true
+      fi
+    done
+
+    if [ "$staged_mathlib" = false ]; then
+      echo "Error: Unable to locate mathlib dependency in the Aeneas closure" >&2
+      exit 1
+    fi
+
+    # Ensure translation files are writable for compilation
+    chmod -R u+w .lake/build/lib/lean/Libtemplate
+
     # Set LEAN_PATH to use the staged libraries
     export LEAN_PATH=.lake/build/lib/lean
     export LEAN_SRC_PATH=.lake/build/lib/lean
+
+    # Precompile the generated translation so downstream imports find .olean files
+    lean --root=$LEAN_SRC_PATH -o .lake/build/lib/lean/Libtemplate/Types.olean .lake/build/lib/lean/Libtemplate/Types.lean
+    lean --root=$LEAN_SRC_PATH -o .lake/build/lib/lean/Libtemplate/Funs.olean .lake/build/lib/lean/Libtemplate/Funs.lean
+    lean --root=$LEAN_SRC_PATH -o .lake/build/lib/lean/Libtemplate.olean .lake/build/lib/lean/Libtemplate.lean
 
     # Build the Lean proofs project
     # Lean will now find the precompiled Aeneas modules and compile Libtemplate and Proofs
@@ -82,32 +97,32 @@ EOF
   '';
 
   installPhase = ''
-    set -eux
+        set -eux
 
-    mkdir -p "$out/lib/lean"
+        mkdir -p "$out/lib/lean"
 
-    # Install built Lean libraries
-    if [ -d .lake/build/lib/lean ]; then
-      cp -r .lake/build/lib/lean/* "$out/lib/lean/"
-    fi
+        # Install built Lean libraries
+        if [ -d .lake/build/lib/lean ]; then
+          cp -r .lake/build/lib/lean/* "$out/lib/lean/"
+        fi
 
-    # Create a metadata file documenting what was verified
-    mkdir -p "$out/nix-support"
-    cat > "$out/nix-support/verification-info" <<EOF
-Lean Proofs Build
-=================
-This derivation contains Lean proofs that verify properties of Rust code
-translated to Lean via Aeneas/Charon.
+        # Create a metadata file documenting what was verified
+        mkdir -p "$out/nix-support"
+        cat > "$out/nix-support/verification-info" <<EOF
+    Lean Proofs Build
+    =================
+    This derivation contains Lean proofs that verify properties of Rust code
+    translated to Lean via Aeneas/Charon.
 
-Translation: ${lean-translation}
-Aeneas Library: ${aeneasLeanBuilt}
-Proofs Source: ../../proofs
+    Translation: ${lean-translation}
+    Aeneas Library: ${aeneasLeanBuilt}
+    Proofs Source: ../../proofs
 
-The build success indicates that:
-1. Generated Lean code from Rust type-checks correctly
-2. All theorems in the proofs/ directory hold against the generated code
-3. The Rust implementation satisfies its formal specification
-EOF
+    The build success indicates that:
+    1. Generated Lean code from Rust type-checks correctly
+    2. All theorems in the proofs/ directory hold against the generated code
+    3. The Rust implementation satisfies its formal specification
+    EOF
   '';
 
   meta = {
