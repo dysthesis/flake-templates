@@ -14,15 +14,20 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       perSystem =
         {
-          # NOTE: This packages is only used to construct the common argument for
-          # crane; the actual `pkgs` used in the other Nix modules are defined
-          # below
-          pkgs,
           system,
           ...
         }:
         let
+          pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [
+              inputs.rust-overlay.overlays.default
+              (inputs.lean4-nix.readToolchainFile ./proofs/lean-toolchain)
+            ];
+          };
+
           craneLib = crane.mkLib pkgs;
+
           # Common arguments can be set here to avoid repeating them later
           # NOTE: changes here will rebuild all dependency crates
           src = craneLib.cleanCargoSource ./.;
@@ -56,17 +61,8 @@
               charonToolchain
               advisory-db
               lake2nix
+              pkgs
               ;
-
-            # NOTE: This is where overlays, and other such modifications to the
-            # general shared packages list.
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-              overlays = [
-                inputs.rust-overlay.overlays.default
-                (inputs.lean4-nix.readToolchainFile ./proofs/lean-toolchain)
-              ];
-            };
           };
         };
       imports = [
