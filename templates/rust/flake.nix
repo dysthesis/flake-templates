@@ -3,68 +3,62 @@
 {
   description = "Rust project";
 
-  outputs =
-    inputs@{
-      flake-parts,
-      crane,
-      advisory-db,
-      lean4-nix,
-      ...
-    }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      perSystem =
-        {
-          system,
-          ...
-        }:
-        let
-          pkgs = import inputs.nixpkgs {
-            inherit system;
-            overlays = [
-              inputs.rust-overlay.overlays.default
-              (inputs.lean4-nix.readToolchainFile ./proofs/lean-toolchain)
-            ];
-          };
-
-          craneLib = crane.mkLib pkgs;
-
-          # Common arguments can be set here to avoid repeating them later
-          # NOTE: changes here will rebuild all dependency crates
-          src = craneLib.cleanCargoSource ./.;
-          commonArgs = {
-            inherit src;
-            strictDeps = true;
-
-            buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
-              pkgs.libiconv
-            ];
-
-            nativeBuildInputs = [
-              pkgs.pkg-config
-            ];
-          };
-
-          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-          charonToolchain = inputs.aeneas.inputs.charon.packages.${system}.rustToolchain;
-
-          # Used to build Lean packages
-          lake2nix = pkgs.callPackage lean4-nix.lake { };
-        in
-        {
-          _module.args = {
-            inherit
-              craneLib
-              cargoArtifacts
-              commonArgs
-              src
-              charonToolchain
-              advisory-db
-              lake2nix
-              pkgs
-              ;
-          };
+  outputs = inputs @ {
+    flake-parts,
+    crane,
+    advisory-db,
+    lean4-nix,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      perSystem = {system, ...}: let
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            inputs.rust-overlay.overlays.default
+            (inputs.lean4-nix.readToolchainFile ./proofs/lean-toolchain)
+          ];
         };
+
+        craneLib = crane.mkLib pkgs;
+
+        # Common arguments can be set here to avoid repeating them later
+        # NOTE: changes here will rebuild all dependency crates
+        src = craneLib.cleanCargoSource ./.;
+        commonArgs = {
+          inherit src;
+          strictDeps = true;
+
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            pkgs.libiconv
+          ];
+
+          nativeBuildInputs = [
+            pkgs.pkg-config
+          ];
+        };
+
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+        charonToolchain =
+          inputs.aeneas.inputs.charon.packages.${system}.rustToolchain;
+
+        # Used to build Lean packages
+        lake2nix = pkgs.callPackage lean4-nix.lake {};
+      in {
+        _module.args = {
+          inherit
+            craneLib
+            cargoArtifacts
+            commonArgs
+            src
+            charonToolchain
+            advisory-db
+            lake2nix
+            pkgs
+            ;
+        };
+      };
       imports = [
         ./nix/shell
         ./nix/pkgs
