@@ -29,8 +29,25 @@
           pkgs = nixpkgs.legacyPackages.${system};
           on = opam-nix.lib.${system};
 
+          # Filter source to exclude build artifacts
+          src = pkgs.lib.cleanSourceWith {
+            src = ./.;
+            filter =
+              path: type:
+              let
+                baseName = baseNameOf path;
+              in
+              # Exclude build artifacts and editor files
+              baseName != "_build"
+              && baseName != "_opam"
+              && baseName != ".direnv"
+              && baseName != "result"
+              && !pkgs.lib.hasSuffix ".swp" baseName
+              && !pkgs.lib.hasSuffix ".swo" baseName;
+          };
+
           # Discover local packages (gracefully handles empty repositories)
-          localPackagesQuery = builtins.mapAttrs (_: pkgs.lib.last) (on.listRepo (on.makeOpamRepo ./.));
+          localPackagesQuery = builtins.mapAttrs (_: pkgs.lib.last) (on.listRepo (on.makeOpamRepo src));
 
           # Development packages for tooling
           devPackagesQuery = {
@@ -44,7 +61,7 @@
           };
 
           # Build the opam scope
-          scope = on.buildOpamProject' { } ./. query;
+          scope = on.buildOpamProject' { } src query;
 
           # Apply overlays (currently empty)
           overlay = final: prev: {
