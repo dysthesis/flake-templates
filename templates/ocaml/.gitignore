@@ -1,0 +1,27 @@
+# Dune build artifacts
+_build/
+_opam/
+
+# OCaml artifacts
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+
+# Editor and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Nix
+result
+result-*
+.direnv/

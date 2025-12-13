@@ -33,7 +33,7 @@
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter =
-              path: type:
+              path: _type:
               let
                 baseName = baseNameOf path;
               in
@@ -49,10 +49,11 @@
           # Discover local packages (gracefully handles empty repositories)
           localPackagesQuery = builtins.mapAttrs (_: pkgs.lib.last) (on.listRepo (on.makeOpamRepo src));
 
-          # Development packages for tooling
+          # Development packages for tooling (pinned for reproducibility)
           devPackagesQuery = {
-            ocaml-lsp-server = "*";
-            ocamlformat = "*";
+            ocaml-lsp-server = "1.18.0"; # Language Server Protocol implementation
+            ocamlformat = "0.26.2"; # Code formatter (matches .ocamlformat version)
+            utop = "2.14.0"; # Enhanced REPL with completion and history
           };
 
           # Merged query for scope construction
@@ -64,7 +65,7 @@
           scope = on.buildOpamProject' { } src query;
 
           # Apply overlays (currently empty)
-          overlay = final: prev: {
+          overlay = _final: _prev: {
             # Custom package overrides can be added here
           };
           scope' = scope.overrideScope overlay;

@@ -20,9 +20,7 @@
     {
       devShells.default = pkgs.mkShell {
         inputsFrom = builtins.attrValues localPackages;
-        buildInputs = devPackages ++ [
-          # Additional development tools from nixpkgs can be added here
-        ];
+        buildInputs = devPackages;
       };
     };
 }
