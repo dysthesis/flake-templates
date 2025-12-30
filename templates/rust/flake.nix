@@ -7,7 +7,6 @@
     flake-parts,
     crane,
     advisory-db,
-    lean4-nix,
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -16,7 +15,6 @@
           inherit system;
           overlays = [
             inputs.rust-overlay.overlays.default
-            (inputs.lean4-nix.readToolchainFile ./proofs/lean-toolchain)
           ];
         };
 
@@ -39,12 +37,6 @@
         };
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-        charonToolchain =
-          inputs.aeneas.inputs.charon.packages.${system}.rustToolchain;
-
-        # Used to build Lean packages
-        lake2nix = pkgs.callPackage lean4-nix.lake {};
       in {
         _module.args = {
           inherit
@@ -52,9 +44,7 @@
             cargoArtifacts
             commonArgs
             src
-            charonToolchain
             advisory-db
-            lake2nix
             pkgs
             ;
         };
@@ -87,10 +77,6 @@
       url = "github:rustsec/advisory-db";
       flake = false;
     };
-
-    # Theorem proving
-    aeneas.url = "github:AeneasVerif/aeneas";
-    lean4-nix.url = "github:dysthesis/lean4-nix/dev";
 
     # Formatting
     treefmt-nix.url = "github:numtide/treefmt-nix";

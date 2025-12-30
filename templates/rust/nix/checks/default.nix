@@ -38,7 +38,6 @@
         "audit"
         # "deny" # TODO: enable this once licensing is decided
         "nextest"
-        "proofs"
       ];
     in
       fold
