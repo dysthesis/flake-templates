@@ -17,6 +17,10 @@
           path = ./templates/rust;
           description = "A template for a generic Rust project";
         };
+        rust-multi-crate = {
+          path = ./templates/rust-multi-crate;
+          description = "A template for a generic Rust workspace";
+        };
         lean = {
           path = ./templates/lean;
           description = "Lean template";
